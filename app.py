@@ -526,8 +526,16 @@ if not filtered.empty:
         solar_total = filtered['Solar_kWh'].sum()
         total_power = eb_total + dg_total + solar_total
         hsd_total = filtered['HSD_Ltr'].sum()
-        eui_avg = filtered['EUI_Actual'].mean() if 'EUI_Actual' in filtered.columns else 0
-
+        if 'EUI_Actual' in filtered.columns:
+            eui_data = filtered[['Date', 'EUI_Actual']].dropna(subset=['EUI_Actual'])
+            if not eui_data.empty:
+                eui_data['Month'] = eui_data['Date'].dt.to_period('M')
+                eui_monthly_avg = eui_data.groupby('Month')['EUI_Actual'].mean()
+                eui_avg = eui_monthly_avg.sum()
+            else:
+                eui_avg = 0
+        else:
+            eui_avg = 0
 
         # Calculate period-over-period change (compare with previous equal period)
         period_days = (end_date - start_date).days + 1
@@ -546,7 +554,17 @@ if not filtered.empty:
 
         # EUI Target for current month
         latest_date = filtered['Date'].max()
-        eui_target = filtered['EUI_Target'].mean() if 'EUI_Target' in filtered.columns else EUI_TARGETS.get(latest_date.month, 0.50)
+        if 'EUI_Target' in filtered.columns:
+            tgt_data = filtered[['Date', 'EUI_Target']].dropna(subset=['EUI_Target'])
+            if not tgt_data.empty:
+                tgt_data['Month'] = tgt_data['Date'].dt.to_period('M')
+                tgt_monthly_avg = tgt_data.groupby('Month')['EUI_Target'].mean()
+                eui_target = tgt_monthly_avg.sum()
+            else:
+                eui_target = EUI_TARGETS.get(latest_date.month, 0.50)
+        else:
+            eui_target = EUI_TARGETS.get(latest_date.month, 0.50)
+
 
 
         c1, c2, c3, c4, c5, c6 = st.columns(6)
@@ -569,7 +587,7 @@ if not filtered.empty:
             st.metric("⛽ HSD (Ltr)", f"{hsd_total:,.0f}",
                      f"{delta_hsd:+,.0f}" if delta_hsd else None, delta_color="inverse")
         with c6:
-            st.metric("EUI/Day (Actual)", f"{eui_avg:.3f}", f"Target: {eui_target:.2f}")
+            st.metric("EUI (Actual)", f"{eui_avg:.3f}", f"Target: {eui_target:.2f}")
 
         st.markdown("---")
 

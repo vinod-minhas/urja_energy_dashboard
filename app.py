@@ -34,7 +34,8 @@ EUI_TARGETS = {
     7: 0.80, 8: 0.84, 9: 0.74, 10: 0.68, 11: 0.52, 12: 0.48
 }
 
-WORKDOCS_SYNC_PATH = r"W:\My Documents\PAN India Consumption"
+WORKDOCS_SYNC_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data")
+
 
 # ========================================================================
 # HELPER FUNCTIONS
@@ -1040,13 +1041,15 @@ if not filtered.empty:
         st.plotly_chart(fig, use_container_width=True)
 
         # Sites data summary
-        site_summary = filtered.groupby('Site').agg(
-            Records=('Date', 'count'),
-            First_Date=('Date', 'min'),
-            Last_Date=('Date', 'max'),
-            Avg_EUI=('EUI_Actual', 'mean')
+        agg_dict = {
+            'Records': ('Date', 'count'),
+            'First_Date': ('Date', 'min'),
+            'Last_Date': ('Date', 'max'),
+        }
+        if 'EUI_Actual' in filtered.columns:
+            agg_dict['Avg_EUI'] = ('EUI_Actual', 'mean')
+        site_summary = filtered.groupby('Site').agg(**agg_dict).reset_index()
 
-        ).reset_index()
         st.dataframe(site_summary, use_container_width=True)
 
 else:

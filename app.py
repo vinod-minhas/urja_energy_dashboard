@@ -15,9 +15,8 @@ st.set_page_config(page_title="RME Energy Command Center", page_icon="⚡", layo
 # ========================================================================
 # CONSTANTS
 # ========================================================================
-SITES = ['DEL5', 'HYD1', 'BLR4', 'BOM5', 'MAA3', 'CCU2', 'PNQ1', 'AMD1',
-         'JAI1', 'LKO1', 'COK1', 'IDR1', 'NAG1', 'VGA1', 'GHY1', 'PAT1',
-         'RAN1', 'BHU1', 'LUH1', 'KOL3', 'GUR2']
+SITES = ['LKO1', 'LKOO', 'BBID', 'UCC1', 'UCC2', 'NCT3', 'NZMF', 'LKOA', 'LKOD', 'LKOI', 'KNUO', 'KNUD', 'GKPL', 'IXDD', 'VNSD', 'PATD', 'CCT1', 'HWHA', 'KOLE', 'GAUA']
+
 
 COLORS = {
     'eb': '#2E86C1',
@@ -432,12 +431,40 @@ with st.sidebar:
     st.caption(f"📡 {data_source} | {len(df['Site'].unique()) if not df.empty else 0} Sites")
     st.markdown("---")
 
-    all_sites = sorted(df['Site'].unique().tolist()) if not df.empty else SITES
-    select_all = st.checkbox("🌐 All Sites", value=True)
+    # UP-East Cluster Site Hierarchy
+    SITE_HIERARCHY = {
+        'FC': ['LKO1'],
+        'SC': ['LKOO', 'BBID'],
+        'DS': ['UCC1', 'UCC2', 'NCT3', 'NZMF', 'LKOA', 'LKOD', 'LKOI', 'KNUO', 'KNUD', 'GKPL', 'IXDD', 'VNSD', 'PATD', 'CCT1', 'HWHA', 'KOLE', 'GAUA']
+    }
+
+    st.markdown("**UP-East Cluster**")
+
+    # Filter by site type
+    site_type = st.multiselect("Site Type", ['FC', 'SC', 'DS'], default=['FC', 'SC', 'DS'])
+
+    # Get sites based on selected type
+    available_sites = []
+    for stype in site_type:
+        available_sites.extend(SITE_HIERARCHY.get(stype, []))
+
+    # Only show sites that actually have data
+    sites_with_data = sorted(df['Site'].unique().tolist()) if not df.empty else []
+    available_sites = [s for s in available_sites if s in sites_with_data]
+
+    # If no data sites match, show all from hierarchy
+    if not available_sites:
+        available_sites = []
+        for stype in site_type:
+            available_sites.extend(SITE_HIERARCHY.get(stype, []))
+
+    # Site selection
+    select_all = st.checkbox("All Sites", value=True)
     if select_all:
-        selected_sites = all_sites
+        selected_sites = available_sites if available_sites else sites_with_data
     else:
-        selected_sites = st.multiselect("Choose Sites", all_sites, default=all_sites[:3])
+        selected_sites = st.multiselect("Choose Sites", available_sites, default=available_sites[:3])
+
 
     st.markdown("---")
 

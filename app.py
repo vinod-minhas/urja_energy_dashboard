@@ -346,18 +346,21 @@ def load_all_site_data(path, _file_hash):
             except Exception:
                 pass
 
-        if all_wdr:
-            wdr_combined = pd.concat(all_wdr, ignore_index=True)
-            energy_combined = energy_combined.merge(
-                wdr_combined[['Date', 'Site', 'WDR_Pct']],
-                on=['Date', 'Site'], how='left', suffixes=('_drop', '')
-            )
-            drop_cols = [c for c in energy_combined.columns if c.endswith('_drop')]
-            energy_combined.drop(columns=drop_cols, inplace=True)
         all_energy = [energy_combined]
 
+    # Merge WDR after all sites are combined
+    final_energy = pd.concat(all_energy, ignore_index=True) if all_energy else pd.DataFrame()
+    if all_wdr and not final_energy.empty:
+        wdr_combined = pd.concat(all_wdr, ignore_index=True)
+        final_energy = final_energy.merge(
+            wdr_combined[['Date', 'Site', 'WDR_Pct']],
+            on=['Date', 'Site'], how='left', suffixes=('_drop', '')
+        )
+        drop_cols = [c for c in final_energy.columns if c.endswith('_drop')]
+        final_energy.drop(columns=drop_cols, inplace=True)
+
     return {
-        'energy': pd.concat(all_energy, ignore_index=True) if all_energy else pd.DataFrame(),
+        'energy': final_energy,
         'feeders': pd.concat(all_feeders, ignore_index=True) if all_feeders else pd.DataFrame(),
         'submeters': pd.concat(all_submeters, ignore_index=True) if all_submeters else pd.DataFrame(),
         'fuel': pd.concat(all_fuel, ignore_index=True) if all_fuel else pd.DataFrame(),

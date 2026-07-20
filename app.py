@@ -551,6 +551,34 @@ if not filtered.empty:
         prev_dg = prev_data['DG_kWh'].sum() if not prev_data.empty else 0
         prev_solar = prev_data['Solar_kWh'].sum() if not prev_data.empty else 0
         prev_hsd = prev_data['HSD_Ltr'].sum() if not prev_data.empty else 0
+        # Category-wise consumption from feeders/submeters
+        if not feeders_df.empty:
+            site_feeders = feeders_df[
+                (feeders_df['Site'].isin(selected_sites)) &
+                (feeders_df['Date'].dt.date >= start_date) &
+                (feeders_df['Date'].dt.date <= end_date)
+            ]
+            hvac_cols = [c for c in site_feeders.columns if any(x in c.upper() for x in ['CHILLER', 'AHU'])]
+            hvac_total = site_feeders[hvac_cols].sum().sum() if hvac_cols else 0
+            lighting_cols = [c for c in site_feeders.columns if 'LIGHTING' in c.upper()]
+            lighting_total = site_feeders[lighting_cols].sum().sum() if lighting_cols else 0
+        else:
+            hvac_total = 0
+            lighting_total = 0
+
+        if not submeters_df.empty:
+            site_subs = submeters_df[
+                (submeters_df['Site'].isin(selected_sites)) &
+                (submeters_df['Date'].dt.date >= start_date) &
+                (submeters_df['Date'].dt.date <= end_date)
+            ]
+            ups_cols = [c for c in site_subs.columns if 'UPS' in c.upper()]
+            ups_total = site_subs[ups_cols].sum().sum() if ups_cols else 0
+            mhe_cols = [c for c in site_subs.columns if 'CONVEYOR' in c.upper()]
+            mhe_total = site_subs[mhe_cols].sum().sum() if mhe_cols else 0
+        else:
+            ups_total = 0
+            mhe_total = 0
 
         # EUI Target for current month
         latest_date = filtered['Date'].max()
@@ -588,8 +616,16 @@ if not filtered.empty:
                      f"{delta_hsd:+,.0f}" if delta_hsd else None, delta_color="inverse")
         with c6:
             st.metric("EUI (Actual)", f"{eui_avg:.3f}", f"Target: {eui_target:.2f}")
-
         st.markdown("---")
+        c1, c2, c3, c4 = st.columns(4)
+        with c1:
+            st.metric("HVAC (kWh)", f"{hvac_total:,.0f}")
+        with c2:
+            st.metric("UPS (kWh)", f"{ups_total:,.0f}")
+        with c3:
+            st.metric("Lighting (kWh)", f"{lighting_total:,.0f}")
+        with c4:
+            st.metric("MHE (kWh)", f"{mhe_total:,.0f}")
 
         # --- Power Consumption Chart + Energy Mix ---
         col_left, col_right = st.columns([3, 1])

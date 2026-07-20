@@ -355,13 +355,6 @@ def load_all_site_data(path, _file_hash):
         )
         drop_cols = [c for c in final_energy.columns if c.endswith('_drop')]
         final_energy.drop(columns=drop_cols, inplace=True)
-    import streamlit as st
-    st.write(f"DEBUG WDR: final_energy shape={final_energy.shape}")
-    st.write(f"DEBUG WDR: WDR_Pct in columns = {'WDR_Pct' in final_energy.columns}")
-    if 'WDR_Pct' in final_energy.columns:
-        st.write(f"DEBUG WDR: non-null WDR = {final_energy['WDR_Pct'].notna().sum()}")
-        st.write(f"DEBUG WDR: sites with WDR = {final_energy[final_energy['WDR_Pct'].notna()]['Site'].unique().tolist()}")
-
 
     return {
         'energy': final_energy,

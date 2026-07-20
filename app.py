@@ -297,6 +297,21 @@ def load_all_site_data(path, _file_hash):
                         all_scrap.append(scrap_long)
                 except Exception:
                     pass
+                # ---- WDR % from Scrap ----
+                try:
+                    scrap_raw2 = pd.read_excel(xl, 'Scrap Consumption', header=None)
+                    dates_row = scrap_raw2.iloc[1, 3:]
+                    wdr_row = scrap_raw2.iloc[90, 3:]
+                    wdr_df = pd.DataFrame({
+                        'Date': pd.to_datetime(dates_row.values, errors='coerce'),
+                        'WDR_Pct': pd.to_numeric(wdr_row.values, errors='coerce')
+                    })
+                    wdr_df = wdr_df.dropna(subset=['Date'])
+                    wdr_df['WDR_Pct'] = wdr_df['WDR_Pct'] * 100
+                    wdr_df['Site'] = site_code
+                    all_wdr.append(wdr_df)
+                except Exception:
+                    pass
 
             # ---- SITE INFORMATION ----
             if 'Site Information' in sheets:
@@ -329,24 +344,6 @@ def load_all_site_data(path, _file_hash):
             )
             drop_cols = [c for c in energy_combined.columns if c.endswith('_drop')]
             energy_combined.drop(columns=drop_cols, inplace=True)
-            # ---- WDR % from Scrap ----
-        if 'Scrap Consumption' in sheets:
-            try:
-                scrap_raw = pd.read_excel(xl, 'Scrap Consumption', header=None)
-                dates_row = scrap_raw.iloc[1, 3:]
-                wdr_row = scrap_raw.iloc[90, 3:]
-                wdr_df = pd.DataFrame({
-                    'Date': pd.to_datetime(dates_row.values, errors='coerce'),
-                    'WDR_Pct': pd.to_numeric(wdr_row.values, errors='coerce')
-                })
-                wdr_df = wdr_df.dropna(subset=['Date'])
-                wdr_df['WDR_Pct'] = wdr_df['WDR_Pct'] * 100
-                wdr_df['Site'] = site_code
-                all_wdr.append(wdr_df)
-            except Exception:
-                pass
-
-        all_energy = [energy_combined]
 
     # Merge WDR after all sites are combined
     final_energy = pd.concat(all_energy, ignore_index=True) if all_energy else pd.DataFrame()
